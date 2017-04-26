@@ -36,5 +36,10 @@ struct client {
     test_case_cb_t test_case_cb;
 };
 
+
+extern char g_file_set[20][100];
+extern int g_test_file_num;
+
 int drive_frame (struct client client);
+int cleanup_test_files (struct rpc_context *rpc, struct nfs_fh3 rootfh);
 #endif

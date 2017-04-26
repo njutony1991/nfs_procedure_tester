@@ -83,10 +83,15 @@ void nfs_create_testcase_final_cb(struct rpc_context *rpc, int status, void *dat
 
     if ((CREATE_PATHCONF.no_trunc == 1 && res->status == NFS3ERR_NAMETOOLONG)
         || (CREATE_PATHCONF.no_trunc == 0 && res->status == NFS3_OK)) {
-       fprintf(stdout, "TESTCASE7: CREATE LONGNAME  PASSED!\n\n");   
+       fprintf(stdout, "TESTCASE7: CREATE LONGNAME PASSED!\n\n");   
     } else {
        fprintf(stderr, "TESTCASE7: CREATE LONGNAME FAILED: %d\n\n", res->status);
     }
+    
+    //fprintf(stdout, "TESTCASE FINAL: Clean Up Test Files\n");
+    //if (cleanup_test_files(rpc, client->rootfh) == -1) {
+    //   fprintf(stderr, "Failed to clean up Test Files\n"); 
+    //} 
 
     client->is_finished = 1;
 }
@@ -231,7 +236,7 @@ void nfs_create_testcase4_cb(struct rpc_context *rpc, int status, void *data, vo
     if (res->status != NFS3ERR_EXIST) {
         fprintf(stderr, "TESTCASE3: CREATE GUARDED REPLICATED Request not ok|status:%d\n", res->status);
         fprintf(stderr, "TESTCASE3: CREATE GUARDED REPLICATED FAILED!\n");
-    }else{ 
+    } else { 
         fprintf(stdout, "TESTCASE3: CREATE GUAREDED REPLICATED PASSED!\n");
     }
 
@@ -333,12 +338,12 @@ void nfs_create_testcase2_cb(struct rpc_context *rpc , int status, void *data, v
     } else {
         if (res->CREATE3res_u.resok.obj_attributes.attributes_follow == 0) {
            fprintf(stderr, "TESTCASE1: create UNCHECKED returns no attributes\n"); 
-        }else{
-           if (res->CREATE3res_u.resok.obj_attributes.post_op_attr_u.attributes.uid != TESTCASE1_OBJATTR.uid.set_uid3_u.uid){
+        } else {
+           if (res->CREATE3res_u.resok.obj_attributes.post_op_attr_u.attributes.uid != TESTCASE1_OBJATTR.uid.set_uid3_u.uid) {
                 fprintf(stderr, "TESTCASE1: create UNCHECKED obj attributes not match|uid: %d\n",
                     res->CREATE3res_u.resok.obj_attributes.post_op_attr_u.attributes.uid);
            } 
-           if (res->CREATE3res_u.resok.obj_attributes.post_op_attr_u.attributes.gid != TESTCASE1_OBJATTR.gid.set_gid3_u.gid){
+           if (res->CREATE3res_u.resok.obj_attributes.post_op_attr_u.attributes.gid != TESTCASE1_OBJATTR.gid.set_gid3_u.gid) {
                 fprintf(stderr, "TESTCASE1: create UNCHECKED obj attributes not match|gid: %d\n",
                     res->CREATE3res_u.resok.obj_attributes.post_op_attr_u.attributes.gid);
            }
@@ -416,8 +421,15 @@ void nfs_create_testcase_prepare_cb(struct rpc_context *rpc, int status, void *d
         exit(10);
     }
 
-    fprintf(stdout, "\nConnected to RPC.NFSD on %s:%d\n", client->server, client->nfs_port);
+    fprintf(stdout, "Connected to RPC.NFSD on %s:%d\n", client->server, 2049);
+    fprintf(stdout, "\nTESTCASE PREPARE: Clean Up Test Files\n");
+
+    if (cleanup_test_files(rpc, client->rootfh) == -1) {
+       fprintf(stderr, "Failed to clean up Test Files\n"); 
+    } 
+
     fprintf(stdout, "TESTCASE PREPARE: Send PATHCONF Request\n");
+
     struct PATHCONF3args args;
     memset((void *)&args, 0, sizeof(args)); 
     args.object = client->rootfh; 
@@ -425,7 +437,7 @@ void nfs_create_testcase_prepare_cb(struct rpc_context *rpc, int status, void *d
     if (rpc_nfs3_pathconf_async(rpc, nfs_create_testcase1_cb, &args, client) != 0) {
         fprintf(stderr, "Failed to send pathconf request\n\n");
         exit(10);
-     }
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -442,6 +454,11 @@ int main(int argc, char *argv[]) {
     client.test_case_cb = nfs_create_testcase_prepare_cb; 
 
     memset(&CREATE_PATHCONF, 0, sizeof(PATHCONF3resok));
+
+    g_test_file_num = 3; 
+    strcpy(g_file_set[0], "create_unchecked.txt");
+    strcpy(g_file_set[1], "create_guarded.txt");
+    strcpy(g_file_set[2], "create_exclusive.txt"); 
 
     drive_frame(client);
     fprintf(stdout, "nfsclient finished\n");

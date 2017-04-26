@@ -91,8 +91,8 @@ void getport_mountd_cb(struct rpc_context *rpc, int status, void *data, void *pr
     client->mount_port = *(uint32_t *)data;
     fprintf(stdout, "GETPORT returned RPC.MOUNTD is on port:%d\n", client->mount_port);
 
-    if (client->nfs_port == 0) {
-        fprintf(stderr, "RPC.MOUNTD is not available on server : %s:%d\n", client->server, client->nfs_port);
+    if (client->mount_port == 0) {
+        fprintf(stderr, "RPC.MOUNTD is not available on server : %s:%d\n", client->server, client->mount_port);
         exit(10);
     }       
 
