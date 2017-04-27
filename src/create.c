@@ -421,7 +421,7 @@ void nfs_create_testcase_prepare_cb(struct rpc_context *rpc, int status, void *d
     fprintf(stdout, "Connected to RPC.NFSD on %s:%d\n", client->server, 2049);
     fprintf(stdout, "\nTESTCASE PREPARE: Clean Up Test Files\n");
     //try to clean up files, do not set finish flags
-    cleanup_test_files(rpc, client->rootfh, client, 0); 
+    //cleanup_test_files(rpc, client->rootfh, client, 0); 
 
     fprintf(stdout, "TESTCASE PREPARE: Send PATHCONF Request\n");
 
