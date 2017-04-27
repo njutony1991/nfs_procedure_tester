@@ -69,56 +69,53 @@ void nfs_create_testcase_final_cb(struct rpc_context *rpc, int status, void *dat
     struct client *client = private_data;
 
     if (status == RPC_STATUS_ERROR) {
-        fprintf(stderr, "nfs/create call TESTCASE7 failed with \"%s\"\n", (char *)data);
+        fprintf(stderr, "nfs/create call TESTCASE CREATE LONG NAME failed with \"%s\"\n", (char *)data);
         exit(10);
     }
     if (status != RPC_STATUS_SUCCESS) {
-        fprintf(stderr, "nfs/create call TESTCASE7 to server %s failed, status:%d\n", client->server, status);
+        fprintf(stderr, "nfs/create call TESTCASE CREATE LONG NAME to server %s failed, status:%d\n", client->server, status);
         exit(10);
     }
 
-    fprintf(stdout, "TESTCASE7: Got reply from server for NFS/CREATE procedure.\n");
+    fprintf(stdout, "TESTCASE CREATE LONG NAME: Got reply from server for NFS/CREATE procedure.\n");
 
     CREATE3res *res = data;
 
     if ((CREATE_PATHCONF.no_trunc == 1 && res->status == NFS3ERR_NAMETOOLONG)
         || (CREATE_PATHCONF.no_trunc == 0 && res->status == NFS3_OK)) {
-       fprintf(stdout, "TESTCASE7: CREATE LONGNAME PASSED!\n\n");   
+       fprintf(stdout, "TESTCASE CREATE LONG NAME: CREATE LONGNAME PASSED!\n\n");   
     } else {
-       fprintf(stderr, "TESTCASE7: CREATE LONGNAME FAILED: %d\n\n", res->status);
+       fprintf(stderr, "TESTCASE CREATE LONG NAME: CREATE LONGNAME FAILED: %d\n\n", res->status);
     }
     
-    //fprintf(stdout, "TESTCASE FINAL: Clean Up Test Files\n");
-    //if (cleanup_test_files(rpc, client->rootfh) == -1) {
-    //   fprintf(stderr, "Failed to clean up Test Files\n"); 
-    //} 
-
-    client->is_finished = 1;
+    fprintf(stdout, "TESTCASE FINAL: Clean Up Test Files\n");
+    //clean up test files and set termination flags;
+    cleanup_test_files(rpc, client->rootfh, client, 1);
 }
 
 
 
-void nfs_create_testcase7_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
+void nfs_testcase_create_long_name_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
 
     struct client *client = private_data;
 
     if (status == RPC_STATUS_ERROR) {
-        fprintf(stderr, "nfs/create call TESTCASE6 failed with \"%s\"\n", (char *)data);
+        fprintf(stderr, "nfs/create call TESTCASE CREATE EXCLUSIVE REPLICATE DIFFERENT VERF failed with \"%s\"\n", (char *)data);
         exit(10);
     }
     if (status != RPC_STATUS_SUCCESS) {
-        fprintf(stderr, "nfs/create call TESTCASE6 to server %s failed, status:%d\n", client->server, status);
+        fprintf(stderr, "nfs/create call TESTCASE CREATE EXCLUSIVE REPLICATE DIFFERENT VERF to server %s failed, status:%d\n", client->server, status);
         exit(10);
     }
 
-    fprintf(stdout, "TESTCASE6: Got reply from server for NFS/CREATE procedure.\n");
+    fprintf(stdout, "TESTCASE CREATE EXCLUSIVE REPLICATE DIFFERENT VERF: Got reply from server for NFS/CREATE procedure.\n");
 
     CREATE3res *res = data;
     if (res->status != NFS3ERR_EXIST) {
-        fprintf(stderr, "TESTCASE6: CREATE EXCLUSIVE Replicated, Different Verf not ok|status:%d\n", res->status);
-        fprintf(stderr, "TESTCASE6: CREATE EXCLUSIVE Replicated, Different Verf FAILED!\n");
+        fprintf(stderr, "TESTCASE CREATE EXCLUSIVE REPLICATE DIFFERENT VERF: CREATE EXCLUSIVE Replicated, Different Verf not ok|status:%d\n", res->status);
+        fprintf(stderr, "TESTCASE CREATE EXCLUSIVE REPLICATE DIFFERENT VERF: CREATE EXCLUSIVE Replicated, Different Verf FAILED!\n");
     } else {  
-        fprintf(stdout, "TESTCASE6: CREATE EXCLUSIVE Replicated, Different Verf PASSED!\n");
+        fprintf(stdout, "TESTCASE CREATE EXCLUSIVE REPLICATE DIFFERENT VERF: CREATE EXCLUSIVE Replicated, Different Verf PASSED!\n");
     }
     fprintf(stdout, "\nTESTCASE7: Send CREATE LONGNAME Request\n");
 
@@ -138,106 +135,106 @@ void nfs_create_testcase7_cb(struct rpc_context *rpc, int status, void *data, vo
     }
 }
 
-void nfs_create_testcase6_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
+void nfs_testcase_create_exclusive_replicate_different_verf_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
 
     struct client *client = private_data;
 
     if (status == RPC_STATUS_ERROR) {
-        fprintf(stderr, "nfs/create call TESTCASE5 failed with \"%s\"\n", (char *)data);
+        fprintf(stderr, "nfs/create call TESTCASE CREATE EXCLUSIVE REPLICATE SAME VERF failed with \"%s\"\n", (char *)data);
         exit(10);
     }
     if (status != RPC_STATUS_SUCCESS) {
-        fprintf(stderr, "nfs/create call TESTCASE5 to server %s failed, status:%d\n", client->server, status);
+        fprintf(stderr, "nfs/create call TESTCASE CREATE EXCLUSIVE REPLICATE SAME VERF to server %s failed, status:%d\n", client->server, status);
         exit(10);
     }
 
-    fprintf(stdout, "TESTCASE5: Got reply from server for NFS/CREATE procedure.\n");
+    fprintf(stdout, "TESTCASE CREATE EXCLUSIVE REPLICATE SAME VERF: Got reply from server for NFS/CREATE procedure.\n");
 
     CREATE3res *res = data;
     if (res->status != NFS3_OK) {
-        fprintf(stderr, "TESTCASE5: CREATE EXCLUSIVE Replicated, Same Verf not ok|status:%d\n", res->status);
-        fprintf(stderr, "TESTCASE5: CREATE EXCLUSIVE Replicated, Same Verf FAILED!\n");
+        fprintf(stderr, "TESTCASE CREATE EXCLUSIVE REPLICATE SAME VERF: CREATE EXCLUSIVE Replicated, Same Verf not ok|status:%d\n", res->status);
+        fprintf(stderr, "TESTCASE CREATE EXCLUSIVE REPLICATE SAME VERF: CREATE EXCLUSIVE Replicated, Same Verf FAILED!\n");
     } else { 
-        fprintf(stdout, "TESTCASE5: CREATE EXCLUSIVE Replicated, Same Verf PASSED!\n");
+        fprintf(stdout, "TESTCASE CREATE EXCLUSIVE REPLICATE SAME VERF: CREATE EXCLUSIVE Replicated, Same Verf PASSED!\n");
     }
     fprintf(stdout, "\nTESTCASE6: Send CREATE EXCLUSIVE Replicated Request,Different Verf\n");
 
     struct CREATE3args args;
     memset((void*)&args, 0, sizeof(args));
     args.where.dir = client->rootfh;
-    char* name = "create_exclusive.txt";
+    char* name = g_file_set[2];
     args.where.name = name;
     args.how.mode = EXCLUSIVE;
     time_t different_verf = CREATE_VERF+111;
     memcpy(args.how.createhow3_u.verf, &different_verf, sizeof(args.how.createhow3_u.verf)); 
 
-    int ret = rpc_nfs3_create_async(rpc, nfs_create_testcase7_cb, &args, client);
+    int ret = rpc_nfs3_create_async(rpc, nfs_testcase_create_long_name_cb, &args, client);
     if (ret) {
         fprintf(stderr, "Failed to send create request|ret:%d\n", ret);
         exit(10);
     }
 }
 
-void nfs_create_testcase5_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
+void nfs_testcase_create_exclusive_replicate_same_verf_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
 
     struct client *client = private_data;
 
     if (status == RPC_STATUS_ERROR) {
-        fprintf(stderr, "nfs/create call TESTCASE4 failed with \"%s\"\n", (char *)data);
+        fprintf(stderr, "nfs/create call TESTCASE CREATE EXCLUSIVE failed with \"%s\"\n", (char *)data);
         exit(10);
     }
     if (status != RPC_STATUS_SUCCESS) {
-        fprintf(stderr, "nfs/create call TESTCASE4 to server %s failed, status:%d\n", client->server, status);
+        fprintf(stderr, "nfs/create call TESTCASE CREATE EXCLUSIVE to server %s failed, status:%d\n", client->server, status);
         exit(10);
     }
 
-    fprintf(stdout, "TESTCASE4: Got reply from server for NFS/CREATE procedure.\n");
+    fprintf(stdout, "TESTCASE CREATE EXCLUSIVE: Got reply from server for NFS/CREATE procedure.\n");
 
     CREATE3res *res = data;
     if (res->status != NFS3_OK) {
-        fprintf(stderr, "TESTCASE4: CREATE EXCLUSIVE not ok|status:%d\n", res->status);
-        fprintf(stderr, "TESTCASE4: CREATE EXCLUSIVE FAILED!\n");
+        fprintf(stderr, "TESTCASE CREATE EXCLUSIVE: CREATE EXCLUSIVE not ok|status:%d\n", res->status);
+        fprintf(stderr, "TESTCASE CREATE EXCLUSIVE: CREATE EXCLUSIVE FAILED!\n");
     } else { 
-        fprintf(stdout, "TESTCASE4: CREATE EXCLUSIVE PASSED!\n");
+        fprintf(stdout, "TESTCASE CREATE EXCLUSIVE: CREATE EXCLUSIVE PASSED!\n");
     }
     fprintf(stdout, "\nTESTCASE5: Send CREATE EXCLUSIVE Replicated Request,Same Verf\n");
 
     struct CREATE3args args;
     memset((void*)&args, 0, sizeof(args));
     args.where.dir = client->rootfh;
-    char* name = "create_exclusive.txt";
+    char* name = g_file_set[2];
     args.where.name = name;
     args.how.mode = EXCLUSIVE;
     memcpy(args.how.createhow3_u.verf, &CREATE_VERF, sizeof(args.how.createhow3_u.verf)); 
 
-    int ret = rpc_nfs3_create_async(rpc, nfs_create_testcase6_cb, &args, client);
+    int ret = rpc_nfs3_create_async(rpc, nfs_testcase_create_exclusive_replicate_different_verf_cb, &args, client);
     if (ret) {
         fprintf(stderr, "Failed to send create request|ret:%d\n", ret);
         exit(10);
     }
 }
 
-void nfs_create_testcase4_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
+void nfs_testcase_create_exclusive_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
 
     struct client *client = private_data;
 
     if (status == RPC_STATUS_ERROR) {
-        fprintf(stderr, "nfs/create call TESTCASE3 failed with \"%s\"\n", (char *)data);
+        fprintf(stderr, "nfs/create call TESTCASE CREATE GUARDED REPLICATE failed with \"%s\"\n", (char *)data);
         exit(10);
     }
     if (status != RPC_STATUS_SUCCESS) {
-        fprintf(stderr, "nfs/create call TESTCASE3 to server %s failed, status:%d\n", client->server, status);
+        fprintf(stderr, "nfs/create call TESTCASE CREATE GUARDED REPLICATE to server %s failed, status:%d\n", client->server, status);
         exit(10);
     }
 
-    fprintf(stdout, "TESTCASE3: Got reply from server for NFS/CREATE procedure.\n");
+    fprintf(stdout, "TESTCASE CREATE GUARDED REPLICATE: Got reply from server for NFS/CREATE procedure.\n");
 
     CREATE3res *res = data;
     if (res->status != NFS3ERR_EXIST) {
-        fprintf(stderr, "TESTCASE3: CREATE GUARDED REPLICATED Request not ok|status:%d\n", res->status);
-        fprintf(stderr, "TESTCASE3: CREATE GUARDED REPLICATED FAILED!\n");
+        fprintf(stderr, "TESTCASE CREATE GUARDED REPLICATE: CREATE GUARDED REPLICATE Request not ok|status:%d\n", res->status);
+        fprintf(stderr, "TESTCASE CREATE GUARDED REPLICATE: CREATE GUARDED REPLICATE FAILED!\n");
     } else { 
-        fprintf(stdout, "TESTCASE3: CREATE GUAREDED REPLICATED PASSED!\n");
+        fprintf(stdout, "TESTCASE CREATE GUARDED REPLICATE: CREATE GUARDED REPLICATE PASSED!\n");
     }
 
     fprintf(stdout, "\nTESTCASE4: Send CREATE EXCLUSIVE Request\n");
@@ -245,116 +242,116 @@ void nfs_create_testcase4_cb(struct rpc_context *rpc, int status, void *data, vo
     struct CREATE3args args;
     memset((void*)&args, 0, sizeof(args));
     args.where.dir = client->rootfh;
-    char* name = "create_exclusive.txt";
+    char* name = g_file_set[2];
     args.where.name = name;
     args.how.mode = EXCLUSIVE;
     memcpy(args.how.createhow3_u.verf, &CREATE_VERF, sizeof(args.how.createhow3_u.verf)); 
 
-    int ret = rpc_nfs3_create_async(rpc, nfs_create_testcase5_cb, &args, client);
+    int ret = rpc_nfs3_create_async(rpc, nfs_testcase_create_exclusive_replicate_same_verf_cb, &args, client);
     if (ret) {
         fprintf(stderr, "Failed to send create request|ret:%d\n", ret);
         exit(10);
     }
 }
 
-void nfs_create_testcase3_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
+void nfs_testcase_create_guarded_replicate_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
 
     struct client *client = private_data;
 
     if (status == RPC_STATUS_ERROR) {
-        fprintf(stderr, "nfs/create call TESTCASE2 failed with \"%s\"\n", (char *)data);
+        fprintf(stderr, "nfs/create call TESTCASE CREATE GUARDED failed with \"%s\"\n", (char *)data);
         exit(10);
     }
     if (status != RPC_STATUS_SUCCESS) {
-        fprintf(stderr, "nfs/create call TESTCASE2 to server %s failed, status:%d\n", client->server, status);
+        fprintf(stderr, "nfs/create call TESTCASE CREATE GUARDED to server %s failed, status:%d\n", client->server, status);
         exit(10);
     }
 
-    fprintf(stdout, "TESTCASE2: Got reply from server for NFS/CREATE procedure.\n");
+    fprintf(stdout, "TESTCASE CREATE GUARDED: Got reply from server for NFS/CREATE procedure.\n");
 
     CREATE3res *res = data;
     if (res->status != NFS3_OK) {
-        fprintf(stderr, "TESTCASE2: CREATE GUARDED not ok|status:%d\n", res->status);
-        fprintf(stderr, "TESTCASE2: CREATE GUARDED FAILED!\n");
+        fprintf(stderr, "TESTCASE CREATE GUARDED: CREATE GUARDED not ok|status:%d\n", res->status);
+        fprintf(stderr, "TESTCASE CREATE GUARDED: CREATE GUARDED FAILED!\n");
         goto next;
     } else {
         if (res->CREATE3res_u.resok.obj_attributes.attributes_follow == 0) {
-           fprintf(stderr, "TESTCASE2: create GUARDED returns no attributes\n"); 
+           fprintf(stderr, "TESTCASE CREATE GUARDED: create GUARDED returns no attributes\n"); 
         }else{
            if (res->CREATE3res_u.resok.obj_attributes.post_op_attr_u.attributes.uid != TESTCASE2_OBJATTR.uid.set_uid3_u.uid) {
-                fprintf(stderr, "TESTCASE2: create GUARDED obj attributes not match|uid: %d\n",
+                fprintf(stderr, "TESTCASE CREATE GUARDED: create GUARDED obj attributes not match|uid: %d\n",
                     res->CREATE3res_u.resok.obj_attributes.post_op_attr_u.attributes.uid);
            } 
            if (res->CREATE3res_u.resok.obj_attributes.post_op_attr_u.attributes.gid != TESTCASE2_OBJATTR.gid.set_gid3_u.gid) {
-                fprintf(stderr, "TESTCASE2: create GUARDED obj attributes not match|gid: %d\n",
+                fprintf(stderr, "TESTCASE CREATE GUARDED: create GUARDED obj attributes not match|gid: %d\n",
                     res->CREATE3res_u.resok.obj_attributes.post_op_attr_u.attributes.gid);
            }
            if (res->CREATE3res_u.resok.obj_attributes.post_op_attr_u.attributes.size != TESTCASE2_OBJATTR.size.set_size3_u.size) {
-                fprintf(stderr, "TESTCASE2: create GUARDED obj attributes not match|size: %d\n",
+                fprintf(stderr, "TESTCASE CREATE GUARDED: create GUARDED obj attributes not match|size: %d\n",
                     res->CREATE3res_u.resok.obj_attributes.post_op_attr_u.attributes.size);
            }
         } 
     }
 
-    fprintf(stdout, "TESTCASE2: CREATE GUAREDED PASSED!\n");
+    fprintf(stdout, "TESTCASE CREATE GUARDED: CREATE GUAREDED PASSED!\n");
 
 next:
-    fprintf(stdout, "\nTESTCASE3: Send CREATE GUARDED REPLICATED Request\n");
+    fprintf(stdout, "\nTESTCASE3: Send CREATE GUARDED REPLICATE Request\n");
 
     struct CREATE3args args;
     memset((void*)&args, 0, sizeof(args));
     args.where.dir = client->rootfh;
-    char* name = "create_guarded.txt";
+    char* name = g_file_set[1];
     args.where.name = name;
     args.how.mode = GUARDED;
     args.how.createhow3_u.obj_attributes = TESTCASE2_OBJATTR;
 
-    int ret = rpc_nfs3_create_async(rpc, nfs_create_testcase4_cb, &args, client);
+    int ret = rpc_nfs3_create_async(rpc, nfs_testcase_create_exclusive_cb, &args, client);
     if (ret) {
         fprintf(stderr, "Failed to send create request|ret:%d\n", ret);
         exit(10);
     }
 }
 
-void nfs_create_testcase2_cb(struct rpc_context *rpc , int status, void *data, void *private_data) {
+void nfs_testcase_create_guarded_cb(struct rpc_context *rpc , int status, void *data, void *private_data) {
     struct client *client = private_data;
 
     if (status == RPC_STATUS_ERROR) {
-        fprintf(stderr, "nfs/create call TESTCASE1 failed with \"%s\"\n", (char *)data);
+        fprintf(stderr, "nfs/create call TESTCASE CREATE UNCHECKED failed with \"%s\"\n", (char *)data);
         exit(10);
     }
     if (status != RPC_STATUS_SUCCESS) {
-        fprintf(stderr, "nfs/create call TESTCASE1 to server %s failed, status:%d\n", client->server, status);
+        fprintf(stderr, "nfs/create call TESTCASE CREATE UNCHECKED to server %s failed, status:%d\n", client->server, status);
         exit(10);
     }
 
-    fprintf(stdout, "TESTCASE1: Got reply from server for NFS/CREATE procedure.\n");
+    fprintf(stdout, "TESTCASE CREATE UNCHECKED: Got reply from server for NFS/CREATE procedure.\n");
 
     CREATE3res *res = data;
     if (res->status != NFS3_OK) {
-        fprintf(stderr, "TESTCASE1: create UNCHECKED not ok|status:%d\n", res->status);
-        fprintf(stderr, "TESTCASE1: CREATE UNCHECKED FAILED!\n");
+        fprintf(stderr, "TESTCASE CREATE UNCHECKED: CREATE UNCHECKED not ok|status:%d\n", res->status);
+        fprintf(stderr, "TESTCASE CREATE UNCHECKED: CREATE UNCHECKED FAILED!\n");
         goto next; 
     } else {
         if (res->CREATE3res_u.resok.obj_attributes.attributes_follow == 0) {
-           fprintf(stderr, "TESTCASE1: create UNCHECKED returns no attributes\n"); 
+           fprintf(stderr, "TESTCASE CREATE UNCHECKED: CREATE UNCHECKED returns no attributes\n"); 
         } else {
            if (res->CREATE3res_u.resok.obj_attributes.post_op_attr_u.attributes.uid != TESTCASE1_OBJATTR.uid.set_uid3_u.uid) {
-                fprintf(stderr, "TESTCASE1: create UNCHECKED obj attributes not match|uid: %d\n",
+                fprintf(stderr, "TESTCASE CREATE UNCHECKED: CREATE UNCHECKED obj attributes not match|uid: %d\n",
                     res->CREATE3res_u.resok.obj_attributes.post_op_attr_u.attributes.uid);
            } 
            if (res->CREATE3res_u.resok.obj_attributes.post_op_attr_u.attributes.gid != TESTCASE1_OBJATTR.gid.set_gid3_u.gid) {
-                fprintf(stderr, "TESTCASE1: create UNCHECKED obj attributes not match|gid: %d\n",
+                fprintf(stderr, "TESTCASE CREATE UNCHECKED: CREATE UNCHECKED obj attributes not match|gid: %d\n",
                     res->CREATE3res_u.resok.obj_attributes.post_op_attr_u.attributes.gid);
            }
            if (res->CREATE3res_u.resok.obj_attributes.post_op_attr_u.attributes.size != TESTCASE1_OBJATTR.size.set_size3_u.size) {
-                fprintf(stderr, "TESTCASE1: create UNCHECKED obj attributes not match|size: %d\n",
+                fprintf(stderr, "TESTCASE CREATE UNCHECKED: CREATE UNCHECKED obj attributes not match|size: %d\n",
                     res->CREATE3res_u.resok.obj_attributes.post_op_attr_u.attributes.size);
            }
         } 
     }
 
-    fprintf(stdout, "TESTCASE1: CREATE UNCHECKED PASSED!\n");
+    fprintf(stdout, "TESTCASE CREATE UNCHECKED: CREATE UNCHECKED PASSED!\n");
 
  next:
     fprintf(stdout, "\nTESTCASE2: Send CREATE GUARDED Request\n");
@@ -362,19 +359,19 @@ void nfs_create_testcase2_cb(struct rpc_context *rpc , int status, void *data, v
     struct CREATE3args args;
     memset((void*)&args, 0, sizeof(args));
     args.where.dir = client->rootfh;
-    char* name = "create_guarded.txt";
+    char* name = g_file_set[1];
     args.where.name = name;
     args.how.mode = GUARDED;
     args.how.createhow3_u.obj_attributes = TESTCASE2_OBJATTR;
 
-    int ret = rpc_nfs3_create_async(rpc, nfs_create_testcase3_cb, &args, client);
+    int ret = rpc_nfs3_create_async(rpc, nfs_testcase_create_guarded_replicate_cb, &args, client);
     if (ret) {
         fprintf(stderr, "Failed to send create request|ret:%d\n", ret);
         exit(10);
     }
 }
 
-void nfs_create_testcase1_cb(struct rpc_context *rpc, int status, void *data , void *private_data)
+void nfs_testcase_create_unchecked_cb(struct rpc_context *rpc, int status, void *data , void *private_data)
 {
     struct client *client = private_data;
 
@@ -402,12 +399,12 @@ void nfs_create_testcase1_cb(struct rpc_context *rpc, int status, void *data , v
     struct CREATE3args args;
     memset((void *)&args, 0, sizeof(args)); 
     args.where.dir = client->rootfh; 
-    char *name = "create_unchecked.txt";
+    char *name = g_file_set[0];
     args.where.name = name;
     args.how.mode = UNCHECKED;
     args.how.createhow3_u.obj_attributes = TESTCASE1_OBJATTR;
-    if (rpc_nfs3_create_async(rpc, nfs_create_testcase2_cb, &args, client) != 0) {
-        fprintf(stderr, "TESTCASE1: Failed to send create request\n");
+    if (rpc_nfs3_create_async(rpc, nfs_testcase_create_guarded_cb, &args, client) != 0) {
+        fprintf(stderr, "TESTCASE CREATE UNCHECKED: Failed to send create request\n");
         exit(10);
     }
 }
@@ -423,10 +420,8 @@ void nfs_create_testcase_prepare_cb(struct rpc_context *rpc, int status, void *d
 
     fprintf(stdout, "Connected to RPC.NFSD on %s:%d\n", client->server, 2049);
     fprintf(stdout, "\nTESTCASE PREPARE: Clean Up Test Files\n");
-
-    if (cleanup_test_files(rpc, client->rootfh) == -1) {
-       fprintf(stderr, "Failed to clean up Test Files\n"); 
-    } 
+    //try to clean up files, do not set finish flags
+    cleanup_test_files(rpc, client->rootfh, client, 0); 
 
     fprintf(stdout, "TESTCASE PREPARE: Send PATHCONF Request\n");
 
@@ -434,7 +429,7 @@ void nfs_create_testcase_prepare_cb(struct rpc_context *rpc, int status, void *d
     memset((void *)&args, 0, sizeof(args)); 
     args.object = client->rootfh; 
 
-    if (rpc_nfs3_pathconf_async(rpc, nfs_create_testcase1_cb, &args, client) != 0) {
+    if (rpc_nfs3_pathconf_async(rpc, nfs_testcase_create_unchecked_cb, &args, client) != 0) {
         fprintf(stderr, "Failed to send pathconf request\n\n");
         exit(10);
     }
@@ -461,6 +456,6 @@ int main(int argc, char *argv[]) {
     strcpy(g_file_set[2], "create_exclusive.txt"); 
 
     drive_frame(client);
-    fprintf(stdout, "nfsclient finished\n");
+
     return 0;
 }
