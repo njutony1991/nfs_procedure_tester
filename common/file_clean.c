@@ -31,7 +31,7 @@ static int cleanup_files_impl(struct rpc_context *rpc, struct nfs_fh3 rootfh, st
     p_args.client = client;
     p_args.is_finish = is_finish;
 
-    fprintf(stdout, "Send request to REMOVE file: %s\n", g_file_set[file_index]);
+    fprintf(stdout, "Send Request to REMOVE file: %s\n", g_file_set[file_index]);
     int ret = rpc_nfs3_remove_async(rpc, frame_cleanup_file_cb, &args, &p_args);
     if (ret) {
         fprintf(stderr, "Failed to send remove request|ret:%d|file:%s\n", ret, g_file_set[file_index]);
