@@ -44,9 +44,7 @@ struct sattr3 TESTCASE2_OBJATTR = {
     .size.set_size3_u.size = 333
 };
 
-time_t CREATE_VERF = 0;
-
-PATHCONF3resok LOOKUP_PATHCONF;
+PATHCONF3resok MKDIR_PATHCONF;
 
 char LONGNAME[1010];
 
@@ -64,27 +62,28 @@ void construct_long_name(unsigned int name_max){
     }
 }
 
-void nfs_lookup_testcase_final_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
+void nfs_mkdir_testcase_final_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
 
     struct client *client = private_data;
 
     if (status == RPC_STATUS_ERROR) {
-        fprintf(stderr, "nfs/lookup call TESTCASE LOOKUP LONG NAME failed with \"%s\"\n", (char *)data);
+        fprintf(stderr, "nfs/mkdir call TESTCASE MKDIR LONG NAME failed with \"%s\"\n", (char *)data);
         exit(10);
     }
     if (status != RPC_STATUS_SUCCESS) {
-        fprintf(stderr, "nfs/lookup call TESTCASE LOOKUP LONG NAME to server %s failed, status:%d\n", client->server, status);
+        fprintf(stderr, "nfs/mkdir call TESTCASE MKDIR LONG NAME to server %s failed, status:%d\n", client->server, status);
         exit(10);
     }
 
-    fprintf(stdout, "TESTCASE LOOKUP LONG NAME: Got reply from server for NFS/LOOKUP procedure.\n");
+    fprintf(stdout, "TESTCASE MKDIR LONG NAME: Got reply from server for NFS/MKDIR procedure.\n");
 
-    LOOKUP3res *res = data;
+    MKDIR3res *res = data;
 
-    if (res->status == NFS3ERR_NAMETOOLONG) {
-       fprintf(stdout, "TESTCASE CREATE LONG NAME: CREATE LONGNAME PASSED!\n\n");   
+	if ((MKDIR_PATHCONF.no_trunc == 1 && res->status == NFS3ERR_NAMETOOLONG)
+        || (MKDIR_PATHCONF.no_trunc == 0 && res->status == NFS3_OK)) {       
+	   fprintf(stdout, "TESTCASE MKDIR LONG NAME: MKDIR LONGNAME PASSED!\n\n");   
     } else {
-       fprintf(stderr, "TESTCASE CREATE LONG NAME: CREATE LONGNAME FAILED: %d\n\n", res->status);
+       fprintf(stderr, "TESTCASE MKDIR LONG NAME: MKDIR LONGNAME FAILED: %d\n\n", res->status);
     }
     
 	client->is_finished = 1;
@@ -92,7 +91,7 @@ void nfs_lookup_testcase_final_cb(struct rpc_context *rpc, int status, void *dat
 
 
 
-void nfs_lookup_testcase_longname_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
+void nfs_mkdir_testcase_longname_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
 
     struct client *client = private_data;
 
@@ -113,25 +112,25 @@ void nfs_lookup_testcase_longname_cb(struct rpc_context *rpc, int status, void *
         exit(10);
     }
 
-	LOOKUP_PATHCONF = res->PATHCONF3res_u.resok;
-    fprintf(stdout, "LOOKUP PATHCONF result, name_max: %d\n", LOOKUP_PATHCONF.name_max); 
+	MKDIR_PATHCONF = res->PATHCONF3res_u.resok;
+    fprintf(stdout, "MKDIR PATHCONF result, name_max: %d\n", MKDIR_PATHCONF.name_max); 
 
-    struct LOOKUP3args args;
+    struct MKDIR3args args;
     memset((void*)&args, 0, sizeof(args));
-    args.what.dir = client->rootfh;
+    args.where.dir = client->rootfh;
 
-    construct_long_name(LOOKUP_PATHCONF.name_max);
+    construct_long_name(MKDIR_PATHCONF.name_max);
     char* name = LONGNAME;
-    args.what.name = name;
-	fprintf(stdout, "LOOKUP LONGNAME: %s\n", name);
-    int ret = rpc_nfs3_lookup_async(rpc, nfs_lookup_testcase_final_cb, &args, client);
+    args.where.name = name;
+	fprintf(stdout, "MKDIR LONGNAME: %s\n", name);
+    int ret = rpc_nfs3_mkdir_async(rpc, nfs_mkdir_testcase_final_cb, &args, client);
     if (ret) {
-        fprintf(stderr, "Failed to send lookup request|ret:%d\n", ret);
+        fprintf(stderr, "Failed to send mkdir request|ret:%d\n", ret);
         exit(10);
     }
 }
 
-void nfs_lookup_testcase_prepare_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
+void nfs_mkdir_testcase_prepare_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
 
     struct client *client = private_data;
 
@@ -151,7 +150,7 @@ void nfs_lookup_testcase_prepare_cb(struct rpc_context *rpc, int status, void *d
     memset((void *)&args, 0, sizeof(args)); 
     args.object = client->rootfh; 
 
-    if (rpc_nfs3_pathconf_async(rpc, nfs_lookup_testcase_longname_cb, &args, client) != 0) {
+    if (rpc_nfs3_pathconf_async(rpc, nfs_mkdir_testcase_longname_cb, &args, client) != 0) {
         fprintf(stderr, "Failed to send pathconf request\n\n");
         exit(10);
     }
@@ -167,9 +166,9 @@ int main(int argc, char *argv[]) {
     struct client client;
     client.server = argv[1];
     client.export = argv[2];
-    client.test_case_cb = nfs_lookup_testcase_prepare_cb; 
+    client.test_case_cb = nfs_mkdir_testcase_prepare_cb; 
 
-    memset(&LOOKUP_PATHCONF, 0, sizeof(PATHCONF3resok));
+    memset(&MKDIR_PATHCONF, 0, sizeof(PATHCONF3resok));
 
     drive_frame(client);
 

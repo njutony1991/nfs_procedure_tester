@@ -59,7 +59,7 @@ void construct_long_name(unsigned int name_max){
 
     srand((unsigned int)time(NULL));
     int i;
-    for(i=0;i<name_max+5;i++){
+    for (i=0; i<name_max; i++) {
        LONGNAME[i] = 'a' + (rand() % 26);     
     }
 }
@@ -128,6 +128,8 @@ void nfs_testcase_create_long_name_cb(struct rpc_context *rpc, int status, void 
     args.where.name = name;
     args.how.mode = UNCHECKED;
 
+	fprintf(stdout, "Create Long Name: %s\n", name);
+	fprintf(stdout, "Name Length: %d, limit: %d\n", strlen(name), CREATE_PATHCONF.name_max);
     int ret = rpc_nfs3_create_async(rpc, nfs_create_testcase_final_cb, &args, client);
     if (ret) {
         fprintf(stderr, "Failed to send create request|ret:%d\n", ret);
