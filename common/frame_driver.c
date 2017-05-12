@@ -18,6 +18,11 @@ void mount_mnt_cb(struct rpc_context *rpc, int status, void *data, void *private
     }
 
     fprintf(stdout, "Got reply from server for MOUNT/MNT procedure.\n");
+	if (mnt->fhs_status == MNT3ERR_NAMETOOLONG) {
+		fprintf(stderr, "mount/mnt name too long error\n");
+		exit(10);
+	}
+
     client->rootfh.data.data_len = mnt->mountres3_u.mountinfo.fhandle.fhandle3_len;
     client->rootfh.data.data_val = malloc(client->rootfh.data.data_len);
     memcpy(client->rootfh.data.data_val, mnt->mountres3_u.mountinfo.fhandle.fhandle3_val, client->rootfh.data.data_len);
