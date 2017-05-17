@@ -136,12 +136,23 @@ void pmap2_connected_cb(struct rpc_context *rpc, int status, void *data, void *p
 
 int drive_frame(struct client client) {
     struct rpc_context *rpc;
-    struct pollfd pfd;
-
-    setbuf(stdout, NULL);
     rpc = rpc_init_context();
     if (rpc == NULL) {
         fprintf(stderr, "failed to init context\n");
+        exit(10);
+    }
+	
+	drive_frame_with_rpc(client, rpc);
+    return 0;
+}
+
+
+int drive_frame_with_rpc(struct client client, struct rpc_context *rpc) {
+    struct pollfd pfd;
+
+    setbuf(stdout, NULL);
+    if (rpc == NULL) {
+        fprintf(stderr, "rpc context null\n");
         exit(10);
     }
 
@@ -174,4 +185,4 @@ int drive_frame(struct client client) {
     rpc=NULL;
     fprintf(stdout, "nfsclient finished\n");
     return 0;
-}
+} 

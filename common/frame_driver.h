@@ -41,5 +41,6 @@ extern char g_file_set[20][100];
 extern int g_test_file_num;
 
 int drive_frame (struct client client);
+int drive_frame_with_rpc(struct client client, struct rpc_context *rpc);
 int cleanup_test_files(struct rpc_context *rpc, struct nfs_fh3 rootfh, struct client *client, int is_finish);
 #endif
