@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <errno.h>
 
 #include <nfsc/libnfs.h>
 #include <nfsc/libnfs-raw.h>
@@ -45,6 +46,32 @@ struct sattr3 TESTCASE2_OBJATTR = {
 
 PATHCONF3resok ACCESS_PATHCONF;
 
+void nfs_access_testcase_final_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
+
+    struct client *client = private_data;
+
+    if (status == RPC_STATUS_ERROR) {
+        fprintf(stderr, "nfs/access call TESTCASE ACCESS STALEHANDLE failed with \"%s\"\n", (char *)data);
+        exit(10);
+    }
+
+    if (status != RPC_STATUS_SUCCESS) {
+        fprintf(stderr, "nfs/access call TESTCASE ACCESS STALEHANDLE to server %s failed, status:%d\n", client->server, status);
+        exit(10);
+    }
+
+    fprintf(stdout, "TESTCASE ACCESS STALEHANDLE: Got reply from server for NFS/ACCESS procedure.\n");
+
+    ACCESS3res *res = data;
+
+    if (res->status == NFS3ERR_STALE) {
+       fprintf(stdout, "TESTCASE ACCESS STALE: ACCESS STALE PASSED!\n\n");   
+    } else {
+       fprintf(stderr, "TESTCASE ACCESS STALE: ACCESS STALE FAILED: %d\n\n", res->status);
+    }
+    client->is_finished = 1;  
+}
+
 void nfs_access_testcase_stale_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
 
     struct client *client = private_data;
@@ -72,18 +99,27 @@ void nfs_access_testcase_stale_cb(struct rpc_context *rpc, int status, void *dat
     struct ACCESS3args args;
     memset((void*)&args, 0, sizeof(args));
 
-	nfs_fh3 wrong_fh;
-	char data_val[10];
-	memset(data_val, '0', sizeof(data_val));
-	wrong_fh.data.data_len = 10;			
-	wrong_fh.data.data_val = data_val;
-    args.object = wrong_fh;
+	nfs_fh3 stale_fh;
+    memset(&stale_fh, 0, sizeof(nfs_fh3)); 
+    stale_fh.data.data_len = client->rootfh.data.data_len; 
+    stale_fh.data.data_val = malloc(stale_fh.data.data_len);
+    if(stale_fh.data.data_val == NULL) {
+        fprintf(stderr,"TESTCASE ACCESS STALEHANDLE malloc failed: %s\n", strerror(errno));
+        exit(10);
+    }
+
+    memcpy(stale_fh.data.data_val, client->rootfh.data.data_val, stale_fh.data.data_len);
+    size_t index = stale_fh.data.data_len-5; 
+    stale_fh.data.data_val[index] = stale_fh.data.data_val[index]+1; 
+    args.object = stale_fh;
     args.access = ACCESS3_READ | ACCESS3_LOOKUP | ACCESS3_MODIFY | ACCESS3_EXECUTE;
 
-    int ret = rpc_nfs3_access_async(rpc, nfs_access_testcase_stale_cb, &args, client);
+    int ret = rpc_nfs3_access_async(rpc, nfs_access_testcase_final_cb, &args, client);
     if (ret) {
         fprintf(stderr, "Failed to send access request|ret:%d\n", ret);
 	}
+
+    free(stale_fh.data.data_val); 
 }
 
 
