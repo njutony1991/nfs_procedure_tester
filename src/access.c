@@ -25,7 +25,6 @@
 #include <nfsc/libnfs-raw-rquota.h>
 
 
-
 struct sattr3 TESTCASE1_OBJATTR = {
     .uid.set_it = 1,
     .uid.set_uid3_u.uid = 1,
@@ -44,39 +43,52 @@ struct sattr3 TESTCASE2_OBJATTR = {
     .size.set_size3_u.size = 333
 };
 
-time_t CREATE_VERF = 0;
-
 PATHCONF3resok ACCESS_PATHCONF;
 
-void nfs_access_testcase_final_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
+void nfs_access_testcase_stale_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
 
     struct client *client = private_data;
 
     if (status == RPC_STATUS_ERROR) {
-        fprintf(stderr, "nfs/access call TESTCASE ACCESS NOCRED failed with \"%s\"\n", (char *)data);
-        exit(10);
-    }
-    if (status != RPC_STATUS_SUCCESS) {
-        fprintf(stderr, "nfs/access call TESTCASE ACCESS NOCRED to server %s failed, status:%d\n", client->server, status);
+        fprintf(stderr, "nfs/access call TESTCASE ACCESS BADHANDLE failed with \"%s\"\n", (char *)data);
         exit(10);
     }
 
-    fprintf(stdout, "TESTCASE ACCESS NOCRED: Got reply from server for NFS/ACCESS procedure.\n");
+    if (status != RPC_STATUS_SUCCESS) {
+        fprintf(stderr, "nfs/access call TESTCASE ACCESS BADHANDLE to server %s failed, status:%d\n", client->server, status);
+        exit(10);
+    }
+
+    fprintf(stdout, "TESTCASE ACCESS BADHANDLE: Got reply from server for NFS/ACCESS procedure.\n");
 
     ACCESS3res *res = data;
 
-    if (res->status == NFS3ERR_ACCES) {
-       fprintf(stdout, "TESTCASE ACCESS NOCRED: ACCESS NOCRED PASSED!\n\n");   
+    if (res->status == NFS3ERR_BADHANDLE) {
+       fprintf(stdout, "TESTCASE ACCESS BADHANDLE: ACCESS BADHANDLE PASSED!\n\n");   
     } else {
-       fprintf(stderr, "TESTCASE ACCESS NOCRED: ACCESS NOCRED FAILED: %d\n\n", res->status);
+       fprintf(stderr, "TESTCASE ACCESS BADHANDLE: ACCESS BADHANDLE FAILED: %d\n\n", res->status);
     }
     
-	client->is_finished = 1;
+    struct ACCESS3args args;
+    memset((void*)&args, 0, sizeof(args));
+
+	nfs_fh3 wrong_fh;
+	char data_val[10];
+	memset(data_val, '0', sizeof(data_val));
+	wrong_fh.data.data_len = 10;			
+	wrong_fh.data.data_val = data_val;
+    args.object = wrong_fh;
+    args.access = ACCESS3_READ | ACCESS3_LOOKUP | ACCESS3_MODIFY | ACCESS3_EXECUTE;
+
+    int ret = rpc_nfs3_access_async(rpc, nfs_access_testcase_stale_cb, &args, client);
+    if (ret) {
+        fprintf(stderr, "Failed to send access request|ret:%d\n", ret);
+	}
 }
 
 
 
-void nfs_access_testcase_noncred_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
+void nfs_access_testcase_badhandle_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
 
     struct client *client = private_data;
 
@@ -102,10 +114,17 @@ void nfs_access_testcase_noncred_cb(struct rpc_context *rpc, int status, void *d
 
     struct ACCESS3args args;
     memset((void*)&args, 0, sizeof(args));
-    args.object = client->rootfh;
+
+	nfs_fh3 wrong_fh;
+	char data_val[10];
+	memset(data_val, '0', sizeof(data_val));
+	wrong_fh.data.data_len = 10;			
+	wrong_fh.data.data_val = data_val;
+    args.object = wrong_fh;
+
     args.access = ACCESS3_READ | ACCESS3_LOOKUP | ACCESS3_MODIFY | ACCESS3_EXECUTE;
 
-    int ret = rpc_nfs3_access_async(rpc, nfs_access_testcase_final_cb, &args, client);
+    int ret = rpc_nfs3_access_async(rpc, nfs_access_testcase_stale_cb, &args, client);
     if (ret) {
         fprintf(stderr, "Failed to send access request|ret:%d\n", ret);
         exit(10);
@@ -129,7 +148,7 @@ void nfs_access_testcase_prepare_cb(struct rpc_context *rpc, int status, void *d
     memset((void *)&args, 0, sizeof(args)); 
     args.object = client->rootfh; 
 
-    if (rpc_nfs3_pathconf_async(rpc, nfs_access_testcase_noncred_cb, &args, client) != 0) {
+    if (rpc_nfs3_pathconf_async(rpc, nfs_access_testcase_badhandle_cb, &args, client) != 0) {
         fprintf(stderr, "Failed to send pathconf request\n\n");
         exit(10);
     }
@@ -149,10 +168,7 @@ int main(int argc, char *argv[]) {
 
     memset(&ACCESS_PATHCONF, 0, sizeof(PATHCONF3resok));
 
-	struct rpc_context *rpc = rpc_init_context();
-	rpc_set_auth(rpc, authnone_create());
-
-    drive_frame_with_rpc(client, rpc);
+    drive_frame(client);
 
     return 0;
 }
