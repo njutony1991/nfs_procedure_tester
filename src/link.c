@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <errno.h>
 
 #include <nfsc/libnfs.h>
 #include <nfsc/libnfs-raw.h>
@@ -57,12 +58,118 @@ void construct_long_name(unsigned int name_max){
 
     srand((unsigned int)time(NULL));
     int i;
-    for(i=0; i<name_max+1; i++){
+    for(i=0; i<name_max; i++){
        LONGNAME[i] = 'a' + (rand() % 26);     
     }
 }
 
+nfs_fh3 link_args;
+char data[NFS3_FHSIZE+2];
+
+
 void nfs_link_testcase_final_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
+    
+    struct client *client = private_data;
+
+    if (status == RPC_STATUS_ERROR) {
+        fprintf(stderr, "nfs/link call TESTCASE LINK NOTDIR failed with \"%s\"\n", (char *)data);
+        exit(10);
+    }
+    if (status != RPC_STATUS_SUCCESS) {
+        fprintf(stderr, "nfs/link call TESTCASE LINK NOTDIR to server %s failed, status:%d\n", client->server, status);
+        exit(10);
+    }
+
+    fprintf(stdout, "TESTCASE LINK NOTDIR: Got reply from server for NFS/LINK procedure.\n");
+    LINK3res *res = data;
+    if (res->status == NFS3ERR_NOTDIR) {
+       fprintf(stdout, "TESTCASE LINK NOTDIR: LINK NOTDIR PASSED!\n\n");
+    } else {
+       fprintf(stderr, "TESTCASE LINK NOTDIR: LINK NOTDIR FAILED: %d\n\n", res->status);
+    }
+
+	client->is_finished = 1;
+}
+
+void nfs_link_testcase_notdir_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
+    struct client *client = private_data;
+     
+    if (status == RPC_STATUS_ERROR) {
+        fprintf(stderr, "nfs/link call TESTCASE LINK STALE failed with \"%s\"\n", (char *)data);
+        exit(10);
+    }
+    if (status != RPC_STATUS_SUCCESS) {
+        fprintf(stderr, "nfs/link call TESTCASE LINK STALE to server %s failed, status:%d\n", client->server, status);
+        exit(10);
+    }
+
+    fprintf(stdout, "TESTCASE LINK STALE: Got reply from server for NFS/LINK procedure.\n");
+    LINK3res *res = data;
+	if (res->status == NFS3ERR_STALE) {
+	   fprintf(stdout, "TESTCASE LINK STALE: LINK STALE PASSED!\n\n");   
+    } else {
+       fprintf(stderr, "TESTCASE LINK STALE: LINK STALE FAILED: %d\n\n", res->status);
+    }
+   
+    struct LINK3args args;     
+    args.file = link_args;
+    args.link.dir = link_args;
+    args.link.name = "not_dir.txt";  
+    int ret = rpc_nfs3_link_async(rpc, nfs_link_testcase_final_cb, &args, client);
+    if (ret) {
+        fprintf(stderr, "Failed to send link request|ret:%d\n", ret);
+        exit(10);
+    }
+}
+
+void nfs_link_testcase_stale_cb (struct rpc_context *rpc, int status, void *data, void *private_data) {
+
+    struct client *client = private_data;
+    if (status == RPC_STATUS_ERROR) {
+        fprintf(stderr, "nfs/link call TESTCASE LINK BADHANDLE failed with \"%s\"\n", (char *)data);
+        exit(10);
+    }
+    if (status != RPC_STATUS_SUCCESS) {
+        fprintf(stderr, "nfs/link call TESTCASE LINK BADHANDLE to server %s failed, status:%d\n", client->server, status);
+        exit(10);
+    }
+
+    fprintf(stdout, "TESTCASE LINK BADHANDLE: Got reply from server for NFS/LINK procedure.\n");
+    LINK3res *res = data;
+	if (res->status == NFS3ERR_BADHANDLE) {
+	   fprintf(stdout, "TESTCASE LINK BADHANDLE: LINK BADHANDLE PASSED!\n\n");   
+    } else {
+       fprintf(stderr, "TESTCASE LINK BADHANDLE: LINK BADHANDLE FAILED: %d\n\n", res->status);
+    }
+
+    struct LINK3args args;
+    nfs_fh3 stale_fh;
+    memset(&stale_fh, 0, sizeof(nfs_fh3));
+    stale_fh.data.data_len = link_args.data.data_len;
+    stale_fh.data.data_val = malloc(stale_fh.data.data_len);
+    if(stale_fh.data.data_val == NULL) {
+        fprintf(stderr,"TESTCASE LINK STALEHANDLE malloc failed: %s\n", strerror(errno));
+        exit(10);
+    }
+    memcpy(stale_fh.data.data_val, link_args.data.data_val, stale_fh.data.data_len);
+    size_t index = stale_fh.data.data_len-1;
+    stale_fh.data.data_val[index] = stale_fh.data.data_val[index]+1;
+    
+    args.file = stale_fh;
+    args.link.dir = client->rootfh;
+    args.link.name = "stale_handle.txt";
+      
+    int ret = rpc_nfs3_link_async(rpc, nfs_link_testcase_notdir_cb, &args, client);
+    if (ret) {
+        fprintf(stderr, "Failed to send link request|ret:%d\n", ret);
+        free(stale_fh.data.data_val);
+        exit(10);
+    }
+    free(stale_fh.data.data_val);
+   
+}
+
+void nfs_link_testcase_badhandle_cb (struct rpc_context *rpc, int status, void *data, void *private_data) {
 
     struct client *client = private_data;
 
@@ -85,8 +192,22 @@ void nfs_link_testcase_final_cb(struct rpc_context *rpc, int status, void *data,
     } else {
        fprintf(stderr, "TESTCASE LINK LONG NAME: LINK LONGNAME FAILED: %d\n\n", res->status);
     }
-    
-	client->is_finished = 1;
+
+    struct LINK3args args;
+    nfs_fh3 wrong_fh;
+    char data_val[10];
+    memset(data_val, '0', sizeof(data_val));
+    wrong_fh.data.data_len = 10;
+    wrong_fh.data.data_val = data_val;
+
+    args.file = wrong_fh;
+    args.link.dir = client->rootfh;
+    args.link.name = "bad_handle.txt";
+	int ret = rpc_nfs3_link_async(rpc, nfs_link_testcase_stale_cb, &args, client);
+    if (ret) {
+        fprintf(stderr, "Failed to send link request|ret:%d\n", ret);
+        exit(10);
+    }
 }
 
 void nfs_link_testcase_longname_cb(struct rpc_context *rpc, int status, void *data, void *private_data){
@@ -107,7 +228,9 @@ void nfs_link_testcase_longname_cb(struct rpc_context *rpc, int status, void *da
 		fprintf(stderr, "nfs/lookp failed, status: %d\b", res->status);
 		exit(10);
 	}
-	nfs_fh3 link_args = res->LOOKUP3res_u.resok.object;
+
+    link_args.data.data_len = res->LOOKUP3res_u.resok.object.data.data_len;
+    memcpy(link_args.data.data_val, res->LOOKUP3res_u.resok.object.data.data_val, link_args.data.data_len); 
 
 	struct LINK3args args;
     args.file = link_args;		
@@ -116,7 +239,7 @@ void nfs_link_testcase_longname_cb(struct rpc_context *rpc, int status, void *da
 	args.link.name = LONGNAME;
 	fprintf(stdout, "LINK LONGNAME: %s\n", args.link.name);
 
-	int ret = rpc_nfs3_link_async(rpc, nfs_link_testcase_final_cb, &args, client);
+	int ret = rpc_nfs3_link_async(rpc, nfs_link_testcase_badhandle_cb, &args, client);
     if (ret) {
         fprintf(stderr, "Failed to send link request|ret:%d\n", ret);
         exit(10);
@@ -155,7 +278,7 @@ void nfs_link_testcase_lookup_cb(struct rpc_context *rpc, int status, void *data
 	
     int ret = rpc_nfs3_lookup_async(rpc, nfs_link_testcase_longname_cb, &args, client);
     if (ret) {
-        fprintf(stderr, "Failed to send mkdir request|ret:%d\n", ret);
+        fprintf(stderr, "Failed to send lookup request|ret:%d\n", ret);
         exit(10);
     }
 }
@@ -197,6 +320,9 @@ int main(int argc, char *argv[]) {
     client.test_case_cb = nfs_link_testcase_prepare_cb; 
 
     memset(&LINK_PATHCONF, 0, sizeof(PATHCONF3resok));
+    memset(&link_args, 0, sizeof(nfs_fh3));
+    memset(data,0,sizeof(data));
+    link_args.data.data_val = data;
 
     drive_frame(client);
 

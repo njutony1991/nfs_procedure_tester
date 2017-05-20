@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
+#include <errno.h>
 #include <nfsc/libnfs.h>
 #include <nfsc/libnfs-raw.h>
 #include <nfsc/libnfs-raw-mount.h>
@@ -59,12 +59,82 @@ void construct_long_name(unsigned int name_max){
 
     srand((unsigned int)time(NULL));
     int i;
-    for(i=0; i<name_max+1; i++){
+    for(i=0; i<name_max; i++){
        LONGNAME[i] = 'a' + (rand() % 26);     
     }
 }
 
 void nfs_lookup_testcase_final_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
+    struct client *client = private_data;
+
+    if (status == RPC_STATUS_ERROR) {
+        fprintf(stderr, "nfs/link call TESTCASE LOOKUP STALE failed with \"%s\"\n", (char *)data);
+        exit(10);
+    }
+    if (status != RPC_STATUS_SUCCESS) {
+        fprintf(stderr, "nfs/link call TESTCASE LOOKUP STALE to server %s failed, status:%d\n", client->server, status);
+        exit(10);
+    }
+
+    fprintf(stdout, "TESTCASE LOOK STALE: Got reply from server for NFS/LOOKUP procedure.\n");
+    LINK3res *res = data;
+    if (res->status == NFS3ERR_STALE) {
+       fprintf(stdout, "TESTCASE LOOKUP STALE: LOOKUP STALE PASSED!\n\n");
+    } else {
+       fprintf(stderr, "TESTCASE LOOKUP STALE: LOOKUP STALE FAILED: %d\n\n", res->status);
+    }
+
+    client->is_finished = 1;
+
+}
+
+void nfs_lookup_testcase_stale_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
+
+    struct client *client = private_data;
+
+    if (status == RPC_STATUS_ERROR) {
+        fprintf(stderr, "nfs/lookup call TESTCASE LOOKUP BADHANDLE failed with \"%s\"\n", (char *)data);
+        exit(10);
+    }
+    if (status != RPC_STATUS_SUCCESS) {
+        fprintf(stderr, "nfs/lookup call TESTCASE LOOKUP BADHANDLE to server %s failed, status:%d\n", client->server, status);
+        exit(10);
+    }
+
+    fprintf(stdout, "TESTCASE LOOKUP BADHANDLE: Got reply from server for NFS/LOOKUP procedure.\n");
+
+    LOOKUP3res *res = data;
+
+    if (res->status == NFS3ERR_BADHANDLE) {
+       fprintf(stdout, "TESTCASE LOOKUP BADHANDLE: LOOKUP BADHANDLE PASSED!\n\n");
+    } else {
+       fprintf(stderr, "TESTCASE LOOKUP BADHANDLE: LOOKUP BADHANDLE FAILED: %d\n\n", res->status);
+    }
+
+    struct LOOKUP3args args;
+    nfs_fh3 stale_fh;
+    memset(&stale_fh, 0, sizeof(nfs_fh3));
+    stale_fh.data.data_len = client->rootfh.data.data_len;
+    stale_fh.data.data_val = malloc(stale_fh.data.data_len);
+    if(stale_fh.data.data_val == NULL) {
+        fprintf(stderr,"TESTCASE LOOKUP STALEHANDLE malloc failed: %s\n", strerror(errno));
+        exit(10);
+    }
+    memcpy(stale_fh.data.data_val, client->rootfh.data.data_val, stale_fh.data.data_len);
+    size_t index = stale_fh.data.data_len-1;
+    stale_fh.data.data_val[index] = stale_fh.data.data_val[index]+1;
+
+    args.what.dir = stale_fh;
+    args.what.name = "stale_handle.txt"; 
+
+    int ret = rpc_nfs3_lookup_async(rpc, nfs_lookup_testcase_final_cb, &args, client);
+    if (ret) {
+        fprintf(stderr, "Failed to send lookup request|ret:%d\n", ret);
+        exit(10);
+    }
+}
+
+void nfs_lookup_testcase_badhandle_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
 
     struct client *client = private_data;
 
@@ -82,12 +152,26 @@ void nfs_lookup_testcase_final_cb(struct rpc_context *rpc, int status, void *dat
     LOOKUP3res *res = data;
 
     if (res->status == NFS3ERR_NAMETOOLONG) {
-       fprintf(stdout, "TESTCASE CREATE LONG NAME: CREATE LONGNAME PASSED!\n\n");   
+       fprintf(stdout, "TESTCASE LOOKUP LONG NAME: LOOKUP LONGNAME PASSED!\n\n");   
     } else {
-       fprintf(stderr, "TESTCASE CREATE LONG NAME: CREATE LONGNAME FAILED: %d\n\n", res->status);
+       fprintf(stderr, "TESTCASE LOOKUP LONG NAME: LOOKUP LONGNAME FAILED: %d\n\n", res->status);
     }
+   
+    struct LOOKUP3args args; 
+    nfs_fh3 wrong_fh;
+    char data_val[10];
+    memset(data_val, '0', sizeof(data_val));
+    wrong_fh.data.data_len = 10;
+    wrong_fh.data.data_val = data_val;
     
-	client->is_finished = 1;
+    args.what.dir = wrong_fh;
+    args.what.name = "meaningless.txt"; 
+
+    int ret = rpc_nfs3_lookup_async(rpc, nfs_lookup_testcase_stale_cb, &args, client);
+    if (ret) {
+        fprintf(stderr, "Failed to send lookup request|ret:%d\n", ret);
+        exit(10);
+    }
 }
 
 
@@ -124,7 +208,7 @@ void nfs_lookup_testcase_longname_cb(struct rpc_context *rpc, int status, void *
     char* name = LONGNAME;
     args.what.name = name;
 	fprintf(stdout, "LOOKUP LONGNAME: %s\n", name);
-    int ret = rpc_nfs3_lookup_async(rpc, nfs_lookup_testcase_final_cb, &args, client);
+    int ret = rpc_nfs3_lookup_async(rpc, nfs_lookup_testcase_badhandle_cb, &args, client);
     if (ret) {
         fprintf(stderr, "Failed to send lookup request|ret:%d\n", ret);
         exit(10);
@@ -142,8 +226,6 @@ void nfs_lookup_testcase_prepare_cb(struct rpc_context *rpc, int status, void *d
 
     fprintf(stdout, "Connected to RPC.NFSD on %s:%d\n", client->server, 2049);
     fprintf(stdout, "\nTESTCASE PREPARE: Clean Up Test Files\n");
-    //try to clean up files, do not set finish flags
-    //cleanup_test_files(rpc, client->rootfh, client, 0); 
 
     fprintf(stdout, "TESTCASE PREPARE: Send PATHCONF Request\n");
 
