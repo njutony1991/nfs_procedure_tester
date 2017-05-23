@@ -115,6 +115,7 @@ void nfs_mknod_testcase_longname_cb(struct rpc_context *rpc, int status, void *d
 	MKNOD_PATHCONF = res->PATHCONF3res_u.resok;
     fprintf(stdout, "MKNOD PATHCONF result, name_max: %d\n", MKNOD_PATHCONF.name_max); 
 
+    fprintf(stdout, "\nTESTCASE1: Send MKNOD LONG NAME Request\n");
     struct MKNOD3args args;
     memset((void*)&args, 0, sizeof(args));
     args.where.dir = client->rootfh;

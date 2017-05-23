@@ -117,6 +117,7 @@ void nfs_rmdir_testcase_longname_cb(struct rpc_context *rpc, int status, void *d
 	RMDIR_PATHCONF = res->PATHCONF3res_u.resok;
     fprintf(stdout, "RMDIR PATHCONF result, name_max: %d\n", RMDIR_PATHCONF.name_max); 
 
+    fprintf(stdout, "\nTESTCASE1: Send RMDIR LONG NAME Request\n");
     struct RMDIR3args args;
     memset((void*)&args, 0, sizeof(args));
 	args.object.dir = client->rootfh;

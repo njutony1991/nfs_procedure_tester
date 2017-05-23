@@ -111,6 +111,7 @@ void nfs_rename_testcase_to_longname_cb(struct rpc_context *rpc, int status, voi
        fprintf(stderr, "TESTCASE RENAME FROM LONG NAME: RENAME FROM LONGNAME FAILED: %d\n\n", res->status);
 	}
 
+    fprintf(stdout, "\nTESTCASE2: Send RENAME TO LONG NAME Request\n");
     struct RENAME3args args;
     memset((void*)&args, 0, sizeof(args));
     args.from.dir = client->rootfh;
@@ -155,6 +156,7 @@ void nfs_rename_testcase_from_longname_cb(struct rpc_context *rpc, int status, v
 	RENAME_PATHCONF = res->PATHCONF3res_u.resok;
     fprintf(stdout, "RENAME PATHCONF result, name_max: %d\n", RENAME_PATHCONF.name_max); 
 
+    fprintf(stdout, "\nTESTCASE1: Send RENAME FROM LONG NAME Request\n");
     struct RENAME3args args;
     memset((void*)&args, 0, sizeof(args));
     args.from.dir = client->rootfh;

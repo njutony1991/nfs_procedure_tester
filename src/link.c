@@ -110,7 +110,7 @@ void nfs_link_testcase_notdir_cb(struct rpc_context *rpc, int status, void *data
     } else {
        fprintf(stderr, "TESTCASE LINK STALE: LINK STALE FAILED: %d\n\n", res->status);
     }
-   
+    fprintf(stdout, "\nTESTCASE3: Send LINK NOTDIR Request\n"); 
     struct LINK3args args;     
     args.file = link_args;
     args.link.dir = link_args;
@@ -142,6 +142,7 @@ void nfs_link_testcase_stale_cb (struct rpc_context *rpc, int status, void *data
        fprintf(stderr, "TESTCASE LINK BADHANDLE: LINK BADHANDLE FAILED: %d\n\n", res->status);
     }
 
+    fprintf(stdout, "\nTESTCASE3: Send LINK STALE HANDLE Request\n");
     struct LINK3args args;
     if (generate_stale_fh(client->rootfh) < 0) {
         fprintf(stderr, "TESTCASE LINK STALE: generate stale fh FAILED\n");
@@ -185,6 +186,7 @@ void nfs_link_testcase_badhandle_cb (struct rpc_context *rpc, int status, void *
         fprintf(stderr, "TESTCASE LINK LONG NAME: LINK LONGNAME FAILED: %d\n\n", res->status);
     }
 
+    fprintf(stdout, "\nTESTCASE2: Send LINK BAD HANDLE Request\n");
     struct LINK3args args;
     if (generate_wrong_fh(10) < 0) {
         fprintf(stderr, "TESTCASE LINK BADHANDLE: generate wrong fh FAILED\n");
@@ -224,6 +226,7 @@ void nfs_link_testcase_longname_cb(struct rpc_context *rpc, int status, void *da
     link_args.data.data_len = res->LOOKUP3res_u.resok.object.data.data_len;
     memcpy(link_args.data.data_val, res->LOOKUP3res_u.resok.object.data.data_val, link_args.data.data_len); 
 
+    fprintf(stdout, "\nTESTCASE1: Send LINK LONGNAME Request\n");
 	struct LINK3args args;
     args.file = link_args;		
 	args.link.dir = client->rootfh;

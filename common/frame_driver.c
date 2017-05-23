@@ -29,7 +29,7 @@ void mount_mnt_cb(struct rpc_context *rpc, int status, void *data, void *private
     client->rootfh.data.data_val = mount_path; 
     memcpy(client->rootfh.data.data_val, mnt->mountres3_u.mountinfo.fhandle.fhandle3_val, client->rootfh.data.data_len);
 
-    fprintf(stdout, "Disconnect socket from mountd server\n");
+    fprintf(stdout, "Disconnect socket from mountd server\n\n");
     if (rpc_disconnect(rpc, "normal disconnect") != 0) {
         fprintf(stderr, "Failed to disconnect socket to mountd\n");
         exit(10);
@@ -55,7 +55,7 @@ void mount_null_cb(struct rpc_context *rpc, int status, void *data, void *privat
         exit(10);
     }
 
-    fprintf(stdout, "Got reply from server for MOUNT/NULL procedure.\n");
+    //fprintf(stdout, "Got reply from server for MOUNT/NULL procedure.\n");
 
     fprintf(stdout, "Send MOUNT/MNT command for %s\n", client->export);
     if (rpc_mount_mnt_async(rpc, mount_mnt_cb, client->export, client) != 0) {
@@ -74,8 +74,8 @@ void mount_connected_cb(struct rpc_context *rpc, int status, void *data , void *
         exit(10);
     }
 
-    fprintf(stdout, "Connected to RPC.MOUNTD on %s:%d\n", client->server, client->mount_port);
-    fprintf(stdout, "Send NULL request to check if RPC.MOUNTD is actually running\n");
+    //fprintf(stdout, "Connected to RPC.MOUNTD on %s:%d\n", client->server, client->mount_port);
+    //fprintf(stdout, "Send NULL request to check if RPC.MOUNTD is actually running\n");
     if (rpc_mount_null_async(rpc, mount_null_cb, client) != 0) {
         fprintf(stderr, "Failed to send null request\n");
         exit(10);
@@ -96,20 +96,20 @@ void getport_mountd_cb(struct rpc_context *rpc, int status, void *data, void *pr
     }
 
     client->mount_port = *(uint32_t *)data;
-    fprintf(stdout, "GETPORT returned RPC.MOUNTD is on port:%d\n", client->mount_port);
+    //fprintf(stdout, "GETPORT returned RPC.MOUNTD is on port:%d\n", client->mount_port);
 
     if (client->mount_port == 0) {
         fprintf(stderr, "RPC.MOUNTD is not available on server : %s:%d\n", client->server, client->mount_port);
         exit(10);
     }       
 
-    fprintf(stdout, "Disconnect socket from portmap server\n");
+    //fprintf(stdout, "Disconnect socket from portmap server\n");
     if (rpc_disconnect(rpc, "normal disconnect") != 0) {
         fprintf(stderr, "Failed to disconnect socket to portmapper\n");
         exit(10);
     }
 
-    fprintf(stdout, "Connect to RPC.MOUNTD on %s:%d\n", client->server, client->mount_port);
+    //fprintf(stdout, "Connect to RPC.MOUNTD on %s:%d\n", client->server, client->mount_port);
     if (rpc_connect_async(rpc, client->server, client->mount_port, mount_connected_cb, client) != 0) {
         fprintf(stderr, "Failed to start connection\n");
         exit(10);
@@ -129,7 +129,7 @@ void pmap2_connected_cb(struct rpc_context *rpc, int status, void *data, void *p
         exit(10);
     }
 
-    fprintf(stdout, "Send getport request asking for MOUNT port\n");
+    //fprintf(stdout, "Send getport request asking for MOUNT port\n");
     if (rpc_pmap2_getport_async(rpc, MOUNT_PROGRAM, MOUNT_V3, IPPROTO_TCP, getport_mountd_cb, client) != 0) {
         fprintf(stderr, "Failed to send getport request\n");
         exit(10);

@@ -125,6 +125,7 @@ void nfs_symlink_testcase_longnfspath_cb(struct rpc_context *rpc, int status, vo
 	    fprintf(stderr, "TESTCASE SYMLINK LONG NAME: SYMLINK LONGNAME FAILED: %d\n\n", res->status);
 	}
 
+    fprintf(stdout, "\nTESTCASE2: Send SYMLINK LONG NFSPATH Request\n");
 	struct SYMLINK3args args;
     memset((void*)&args, 0, sizeof(args));
     args.where.dir = client->rootfh;
@@ -166,6 +167,7 @@ void nfs_symlink_testcase_longname_cb(struct rpc_context *rpc, int status, void 
 	SYMLINK_PATHCONF = res->PATHCONF3res_u.resok;
     fprintf(stdout, "SYMLINK PATHCONF result, name_max: %d\n", SYMLINK_PATHCONF.name_max); 
 
+    fprintf(stdout, "\nTESTCASE1: Send SYMLINK LONG NAME Request\n");
  	struct SYMLINK3args args;
     memset((void*)&args, 0, sizeof(args));
     args.where.dir = client->rootfh;

@@ -111,6 +111,7 @@ void nfs_lookup_testcase_stale_cb(struct rpc_context *rpc, int status, void *dat
        fprintf(stderr, "TESTCASE LOOKUP BADHANDLE: LOOKUP BADHANDLE FAILED: %d\n\n", res->status);
     }
 
+    fprintf(stdout, "\nTESTCASE3: Send LOOKUP STALE HANDLE Request\n");
     struct LOOKUP3args args;
     nfs_fh3 stale_fh;
     memset(&stale_fh, 0, sizeof(nfs_fh3));
@@ -156,7 +157,8 @@ void nfs_lookup_testcase_badhandle_cb(struct rpc_context *rpc, int status, void 
     } else {
        fprintf(stderr, "TESTCASE LOOKUP LONG NAME: LOOKUP LONGNAME FAILED: %d\n\n", res->status);
     }
-   
+  
+    fprintf(stdout, "\nTESTCASE2: Send LOOKUP BAD HANDLE Request\n"); 
     struct LOOKUP3args args; 
     nfs_fh3 wrong_fh;
     char data_val[10];
@@ -197,6 +199,7 @@ void nfs_lookup_testcase_longname_cb(struct rpc_context *rpc, int status, void *
         exit(10);
     }
 
+    fprintf(stdout, "\nTESTCASE1: Send LOOKUP LONG NAME Request\n"); 
 	LOOKUP_PATHCONF = res->PATHCONF3res_u.resok;
     fprintf(stdout, "LOOKUP PATHCONF result, name_max: %d\n", LOOKUP_PATHCONF.name_max); 
 

@@ -60,7 +60,7 @@ void nfs_access_testcase_final_cb(struct rpc_context *rpc, int status, void *dat
         exit(10);
     }
 
-    fprintf(stdout, "TESTCASE ACCESS STALEHANDLE: Got reply from server for NFS/ACCESS procedure.\n");
+    fprintf(stdout, "TESTCASE ACCESS STALE HANDLE: Got reply from server for NFS/ACCESS procedure.\n");
 
     ACCESS3res *res = data;
 
@@ -86,7 +86,7 @@ void nfs_access_testcase_stale_cb(struct rpc_context *rpc, int status, void *dat
         exit(10);
     }
 
-    fprintf(stdout, "TESTCASE ACCESS BADHANDLE: Got reply from server for NFS/ACCESS procedure.\n");
+    fprintf(stdout, "TESTCASE ACCESS BAD HANDLE: Got reply from server for NFS/ACCESS procedure.\n");
 
     ACCESS3res *res = data;
 
@@ -95,7 +95,9 @@ void nfs_access_testcase_stale_cb(struct rpc_context *rpc, int status, void *dat
     } else {
        fprintf(stderr, "TESTCASE ACCESS BADHANDLE: ACCESS BADHANDLE FAILED: %d\n\n", res->status);
     }
-    
+   
+    fprintf(stdout, "\nTESTCASE2: Send ACCESS STALE HANDLE Request\n"); 
+
     struct ACCESS3args args;
     memset((void*)&args, 0, sizeof(args));
     if (generate_stale_fh(client->rootfh) < 0) {
@@ -140,6 +142,7 @@ void nfs_access_testcase_badhandle_cb(struct rpc_context *rpc, int status, void 
 	ACCESS_PATHCONF = res->PATHCONF3res_u.resok;
     fprintf(stdout, "ACCESS PATHCONF result, name_max: %d\n", ACCESS_PATHCONF.name_max); 
 
+    fprintf(stdout, "\nTESTCASE1: Send ACCESS BAD HANDLE Request\n");
     struct ACCESS3args args;
     memset((void*)&args, 0, sizeof(args));
     if (generate_wrong_fh(10) < 0) {

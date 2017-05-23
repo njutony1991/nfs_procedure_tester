@@ -117,6 +117,7 @@ void nfs_remove_testcase_longname_cb(struct rpc_context *rpc, int status, void *
 	REMOVE_PATHCONF = res->PATHCONF3res_u.resok;
     fprintf(stdout, "RMEOVE PATHCONF result, name_max: %d\n", REMOVE_PATHCONF.name_max); 
 
+    fprintf(stdout, "\nTESTCASE1: Send REMOVE LONG NAME Request\n");
     struct REMOVE3args args;
     memset((void*)&args, 0, sizeof(args));
 	args.object.dir = client->rootfh;
