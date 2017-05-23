@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+static char mount_path[1024];
+
 void mount_mnt_cb(struct rpc_context *rpc, int status, void *data, void *private_data)
 {
     struct client *client = private_data;
@@ -24,7 +26,7 @@ void mount_mnt_cb(struct rpc_context *rpc, int status, void *data, void *private
 	}
 
     client->rootfh.data.data_len = mnt->mountres3_u.mountinfo.fhandle.fhandle3_len;
-    client->rootfh.data.data_val = malloc(client->rootfh.data.data_len);
+    client->rootfh.data.data_val = mount_path; 
     memcpy(client->rootfh.data.data_val, mnt->mountres3_u.mountinfo.fhandle.fhandle3_val, client->rootfh.data.data_len);
 
     fprintf(stdout, "Disconnect socket from mountd server\n");

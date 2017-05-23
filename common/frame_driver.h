@@ -16,6 +16,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+
 #include <nfsc/libnfs.h>
 #include <nfsc/libnfs-raw.h>
 #include <nfsc/libnfs-raw-mount.h>
@@ -36,11 +38,19 @@ struct client {
     test_case_cb_t test_case_cb;
 };
 
-
 extern char g_file_set[20][100];
 extern int g_test_file_num;
+
+extern nfs_fh3 g_wrong_fh;
+extern nfs_fh3 g_stale_fh; 
 
 int drive_frame (struct client client);
 int drive_frame_with_rpc(struct client client, struct rpc_context *rpc);
 int cleanup_test_files(struct rpc_context *rpc, struct nfs_fh3 rootfh, struct client *client, int is_finish);
+
+int generate_wrong_fh (size_t data_len);
+void cleanup_wrong_fh ();
+
+int generate_stale_fh (nfs_fh3 origin_fh);
+void cleanup_wrong_fh ();
 #endif

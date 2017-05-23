@@ -143,31 +143,23 @@ void nfs_link_testcase_stale_cb (struct rpc_context *rpc, int status, void *data
     }
 
     struct LINK3args args;
-    nfs_fh3 stale_fh;
-    memset(&stale_fh, 0, sizeof(nfs_fh3));
-    stale_fh.data.data_len = link_args.data.data_len;
-    stale_fh.data.data_val = malloc(stale_fh.data.data_len);
-    if(stale_fh.data.data_val == NULL) {
-        fprintf(stderr,"TESTCASE LINK STALEHANDLE malloc failed: %s\n", strerror(errno));
+    if (generate_stale_fh(client->rootfh) < 0) {
+        fprintf(stderr, "TESTCASE LINK STALE: generate stale fh FAILED\n");
         exit(10);
     }
-    memcpy(stale_fh.data.data_val, link_args.data.data_val, stale_fh.data.data_len);
-    size_t index = stale_fh.data.data_len-1;
-    stale_fh.data.data_val[index] = stale_fh.data.data_val[index]+1;
-    
-    args.file = stale_fh;
+    args.file = g_stale_fh;
     args.link.dir = client->rootfh;
     args.link.name = "stale_handle.txt";
       
     int ret = rpc_nfs3_link_async(rpc, nfs_link_testcase_notdir_cb, &args, client);
     if (ret) {
         fprintf(stderr, "Failed to send link request|ret:%d\n", ret);
-        free(stale_fh.data.data_val);
+        cleanup_stale_fh();
         exit(10);
     }
-    free(stale_fh.data.data_val);
-   
+    cleanup_stale_fh(); 
 }
+
 
 void nfs_link_testcase_badhandle_cb (struct rpc_context *rpc, int status, void *data, void *private_data) {
 
@@ -188,26 +180,26 @@ void nfs_link_testcase_badhandle_cb (struct rpc_context *rpc, int status, void *
 
 	if ((LINK_PATHCONF.no_trunc == 1 && res->status == NFS3ERR_NAMETOOLONG)
         || (LINK_PATHCONF.no_trunc == 0 && res->status == NFS3_OK)) {       
-	   fprintf(stdout, "TESTCASE LINK LONG NAME: LINK LONGNAME PASSED!\n\n");   
+	    fprintf(stdout, "TESTCASE LINK LONG NAME: LINK LONGNAME PASSED\n\n");   
     } else {
-       fprintf(stderr, "TESTCASE LINK LONG NAME: LINK LONGNAME FAILED: %d\n\n", res->status);
+        fprintf(stderr, "TESTCASE LINK LONG NAME: LINK LONGNAME FAILED: %d\n\n", res->status);
     }
 
     struct LINK3args args;
-    nfs_fh3 wrong_fh;
-    char data_val[10];
-    memset(data_val, '0', sizeof(data_val));
-    wrong_fh.data.data_len = 10;
-    wrong_fh.data.data_val = data_val;
-
-    args.file = wrong_fh;
+    if (generate_wrong_fh(10) < 0) {
+        fprintf(stderr, "TESTCASE LINK BADHANDLE: generate wrong fh FAILED\n");
+        exit(10);
+    }
+    args.file = g_wrong_fh;
     args.link.dir = client->rootfh;
     args.link.name = "bad_handle.txt";
 	int ret = rpc_nfs3_link_async(rpc, nfs_link_testcase_stale_cb, &args, client);
     if (ret) {
         fprintf(stderr, "Failed to send link request|ret:%d\n", ret);
+        cleanup_wrong_fh();
         exit(10);
     }
+    cleanup_wrong_fh();
 }
 
 void nfs_link_testcase_longname_cb(struct rpc_context *rpc, int status, void *data, void *private_data){

@@ -98,28 +98,20 @@ void nfs_access_testcase_stale_cb(struct rpc_context *rpc, int status, void *dat
     
     struct ACCESS3args args;
     memset((void*)&args, 0, sizeof(args));
-
-	nfs_fh3 stale_fh;
-    memset(&stale_fh, 0, sizeof(nfs_fh3)); 
-    stale_fh.data.data_len = client->rootfh.data.data_len; 
-    stale_fh.data.data_val = malloc(stale_fh.data.data_len);
-    if(stale_fh.data.data_val == NULL) {
-        fprintf(stderr,"TESTCASE ACCESS STALEHANDLE malloc failed: %s\n", strerror(errno));
+    if (generate_stale_fh(client->rootfh) < 0) {
+        fprintf(stderr, "TESTCASE ACCESS STALE: generate stale fh FAILED\n");
         exit(10);
     }
-
-    memcpy(stale_fh.data.data_val, client->rootfh.data.data_val, stale_fh.data.data_len);
-    size_t index = stale_fh.data.data_len-5; 
-    stale_fh.data.data_val[index] = stale_fh.data.data_val[index]+1; 
-    args.object = stale_fh;
+    args.object = g_stale_fh;
     args.access = ACCESS3_READ | ACCESS3_LOOKUP | ACCESS3_MODIFY | ACCESS3_EXECUTE;
 
     int ret = rpc_nfs3_access_async(rpc, nfs_access_testcase_final_cb, &args, client);
     if (ret) {
         fprintf(stderr, "Failed to send access request|ret:%d\n", ret);
+        cleanup_stale_fh();
+        exit(10);
 	}
-
-    free(stale_fh.data.data_val); 
+    cleanup_stale_fh();
 }
 
 
@@ -150,21 +142,20 @@ void nfs_access_testcase_badhandle_cb(struct rpc_context *rpc, int status, void 
 
     struct ACCESS3args args;
     memset((void*)&args, 0, sizeof(args));
-
-	nfs_fh3 wrong_fh;
-	char data_val[10];
-	memset(data_val, '0', sizeof(data_val));
-	wrong_fh.data.data_len = 10;			
-	wrong_fh.data.data_val = data_val;
-    args.object = wrong_fh;
-
+    if (generate_wrong_fh(10) < 0) {
+        fprintf(stderr, "TESTCASE ACCESS BADHANDLE: generate wrong fh FAILED\n");
+        exit(10);
+    }
+    args.object = g_wrong_fh;
     args.access = ACCESS3_READ | ACCESS3_LOOKUP | ACCESS3_MODIFY | ACCESS3_EXECUTE;
 
     int ret = rpc_nfs3_access_async(rpc, nfs_access_testcase_stale_cb, &args, client);
     if (ret) {
         fprintf(stderr, "Failed to send access request|ret:%d\n", ret);
+        cleanup_wrong_fh();
         exit(10);
     }
+    cleanup_wrong_fh();
 }
 
 void nfs_access_testcase_prepare_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
