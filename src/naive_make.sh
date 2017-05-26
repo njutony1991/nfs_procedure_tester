@@ -14,3 +14,5 @@ gcc -g -DHAVE_CONFIG_H -I. -I..  -o symlink symlink.c ../common/frame_driver.c .
 gcc -g -DHAVE_CONFIG_H -I. -I..  -o create_without_cred create_without_cred.c ../common/frame_driver.c ../common/file_clean.c ../common/fh_generate.c -lnfs
 gcc -g -DHAVE_CONFIG_H -I. -I..  -o access_without_cred access_without_cred.c ../common/frame_driver.c ../common/file_clean.c ../common/fh_generate.c -lnfs
 gcc -g -DHAVE_CONFIG_H -I. -I..  -o rename_without_cred rename_without_cred.c ../common/frame_driver.c ../common/file_clean.c ../common/fh_generate.c -lnfs
+gcc -g -DHAVE_CONFIG_H -I. -I..  -o getattr getattr.c ../common/frame_driver.c ../common/file_clean.c ../common/fh_generate.c -lnfs
+gcc -g -DHAVE_CONFIG_H -I. -I..  -o readdir readdir.c ../common/frame_driver.c ../common/file_clean.c ../common/fh_generate.c -lnfs

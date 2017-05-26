@@ -25,7 +25,16 @@
 #include <nfsc/libnfs-raw-portmap.h>
 #include <nfsc/libnfs-raw-rquota.h>
 
+
 typedef void (*test_case_cb_t) (struct rpc_context *rpc, int status, void *data, void *private_data);
+
+//typedef void (*make_arguments_t) (void *data); 
+
+//struct test_case {
+//    char name[20];
+//    make_arguments_t make_argument;
+//    struct test_case *next;
+//};
 
 struct client {
     char *server;
@@ -34,6 +43,7 @@ struct client {
     uint32_t nfs_port;
     uint32_t rquota_port;
     int is_finished;
+
     struct nfs_fh3 rootfh;
     test_case_cb_t test_case_cb;
 };
@@ -45,8 +55,8 @@ extern nfs_fh3 g_wrong_fh;
 extern nfs_fh3 g_stale_fh; 
 
 int drive_frame (struct client client);
-int drive_frame_with_rpc(struct client client, struct rpc_context *rpc);
-int cleanup_test_files(struct rpc_context *rpc, struct nfs_fh3 rootfh, struct client *client, int is_finish);
+int drive_frame_with_rpc (struct client client, struct rpc_context *rpc);
+int cleanup_test_files (struct rpc_context *rpc, struct nfs_fh3 rootfh, struct client *client, int is_finish);
 
 int generate_wrong_fh (size_t data_len);
 void cleanup_wrong_fh ();

@@ -25,30 +25,32 @@
 #include <nfsc/libnfs-raw-rquota.h>
 
 
+/**
+ *  LOOKUP3args args
+ *  test case1:
+ *  args.what.name :length exceeds path_max
+ *  expect: NFS3ERR_NAMETOOLONG
+ *  test case2:
+ *  args.what.dir :a wrong file handle
+ *  expect: NFS3ERR_BADHANDLE
+ *  test case3:
+ *  args.what.dir :a stale file handle
+ *  expect: NFS3ERR_STALE
+ *  test case4:
+ *  args.what.name :name not exist 
+ *  expect: NFS3ERR_NOENT
+ *  test case5:
+ *  args.what.dir:a file handle
+ *  expect: NFS3ERR_NOTDIR
+ **/
 
-struct sattr3 TESTCASE1_OBJATTR = {
-    .uid.set_it = 1,
-    .uid.set_uid3_u.uid = 1,
-    .gid.set_it = 1,
-    .gid.set_gid3_u.gid = 1,
-    .size.set_it = 1,
-    .size.set_size3_u.size = 222
-};
-
-struct sattr3 TESTCASE2_OBJATTR = {
-    .uid.set_it = 1,
-    .uid.set_uid3_u.uid = 0,
-    .gid.set_it = 1,
-    .gid.set_gid3_u.gid = 0,
-    .size.set_it = 1,
-    .size.set_size3_u.size = 333
-};
-
-time_t CREATE_VERF = 0;
 
 PATHCONF3resok LOOKUP_PATHCONF;
 
 char LONGNAME[1010];
+
+nfs_fh3 existing_fh;
+char fh_data[70];
 
 void construct_long_name(unsigned int name_max){
     if(name_max > 1003){
@@ -68,6 +70,61 @@ void nfs_lookup_testcase_final_cb(struct rpc_context *rpc, int status, void *dat
     struct client *client = private_data;
 
     if (status == RPC_STATUS_ERROR) {
+        fprintf(stderr, "nfs/link call TESTCASE LOOKUP NOTDIR failed with \"%s\"\n", (char *)data);
+        exit(10);
+    }
+    if (status != RPC_STATUS_SUCCESS) {
+        fprintf(stderr, "nfs/link call TESTCASE LOOKUP NOTDIR to server %s failed, status:%d\n", client->server, status);
+        exit(10);
+    }
+
+    fprintf(stdout, "TESTCASE LOOK NOTDIR: Got reply from server for NFS/LOOKUP procedure.\n");
+    LOOKUP3res *res = data;
+    if (res->status == NFS3ERR_NOTDIR) {
+       fprintf(stdout, "TESTCASE LOOKUP NOTDIR: LOOKUP NOTDIR PASSED!\n\n");
+    } else {
+       fprintf(stderr, "TESTCASE LOOKUP NOTDIR: LOOKUP NOTDIR FAILED: %d\n\n", res->status);
+    }
+
+    client->is_finished = 1;
+}  
+
+void nfs_lookup_testcase_notdir_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
+    struct client *client = private_data;
+
+    if (status == RPC_STATUS_ERROR) {
+        fprintf(stderr, "nfs/link call TESTCASE LOOKUP NOENT failed with \"%s\"\n", (char *)data);
+        exit(10);
+    }
+    if (status != RPC_STATUS_SUCCESS) {
+        fprintf(stderr, "nfs/link call TESTCASE LOOKUP NOENT to server %s failed, status:%d\n", client->server, status);
+        exit(10);
+    }
+
+    fprintf(stdout, "TESTCASE LOOK NOENT: Got reply from server for NFS/LOOKUP procedure.\n");
+    LOOKUP3res *res = data;
+    if (res->status == NFS3ERR_NOENT) {
+       fprintf(stdout, "TESTCASE LOOKUP NOENT: LOOKUP NOENT PASSED!\n\n");
+    } else {
+       fprintf(stderr, "TESTCASE LOOKUP NOENT: LOOKUP NOENT FAILED: %d\n\n", res->status);
+    }
+    
+    fprintf(stdout, "\nTESTCASE5: Send LOOKUP NOTDIR Request\n");
+   
+    struct LOOKUP3args args; 
+    args.what.dir = existing_fh;
+    args.what.name = "create_new.txt";
+    int ret = rpc_nfs3_lookup_async(rpc, nfs_lookup_testcase_final_cb, &args, client);
+    if (ret) {
+        fprintf(stderr, "Failed to send lookup request|ret:%d\n", ret);
+        exit(10);
+    }
+}
+
+void nfs_lookup_testcase_noent_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
+    struct client *client = private_data;
+
+    if (status == RPC_STATUS_ERROR) {
         fprintf(stderr, "nfs/link call TESTCASE LOOKUP STALE failed with \"%s\"\n", (char *)data);
         exit(10);
     }
@@ -84,8 +141,15 @@ void nfs_lookup_testcase_final_cb(struct rpc_context *rpc, int status, void *dat
        fprintf(stderr, "TESTCASE LOOKUP STALE: LOOKUP STALE FAILED: %d\n\n", res->status);
     }
 
-    client->is_finished = 1;
-
+    fprintf(stdout, "\nTESTCASE4: Send LOOKUP NOENT Request\n");
+    struct LOOKUP3args args;
+    args.what.dir = client->rootfh;  
+    args.what.name = "no_ent.txt";
+    int ret = rpc_nfs3_lookup_async(rpc, nfs_lookup_testcase_notdir_cb, &args, client);
+    if (ret) {
+        fprintf(stderr, "Failed to send lookup request|ret:%d\n", ret);
+        exit(10);
+    }
 }
 
 void nfs_lookup_testcase_stale_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
@@ -128,7 +192,7 @@ void nfs_lookup_testcase_stale_cb(struct rpc_context *rpc, int status, void *dat
     args.what.dir = stale_fh;
     args.what.name = "stale_handle.txt"; 
 
-    int ret = rpc_nfs3_lookup_async(rpc, nfs_lookup_testcase_final_cb, &args, client);
+    int ret = rpc_nfs3_lookup_async(rpc, nfs_lookup_testcase_noent_cb, &args, client);
     if (ret) {
         fprintf(stderr, "Failed to send lookup request|ret:%d\n", ret);
         exit(10);
@@ -179,29 +243,30 @@ void nfs_lookup_testcase_badhandle_cb(struct rpc_context *rpc, int status, void 
 
 
 void nfs_lookup_testcase_longname_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
-
     struct client *client = private_data;
 
     if (status == RPC_STATUS_ERROR) {
-        fprintf(stderr, "nfs/pathconf call failed with \"%s\"\n", (char *)data);
+        fprintf(stderr, "nfs/lookup call failed with \"%s\"\n", (char *)data);
         exit(10);
     }
     if (status != RPC_STATUS_SUCCESS) {
-        fprintf(stderr, "nfs/pathconf call to server %s failed, status:%d\n", client->server, status);
+        fprintf(stderr, "nfs/lookup call to server %s failed, status:%d\n", client->server, status);
         exit(10);
     }
-    printf("Got reply from server for NFS/PATHCONF procedure.\n");
+    printf("Got reply from server for NFS/LOOKUP procedure.\n");
 
-    PATHCONF3res *res = data;
+    LOOKUP3res *res = data;
 	if (res->status != NFS3_OK) {
-        fprintf(stderr, "TESTCASE PREPARE: PATHCONF not ok|status:%d\n", res->status);
-        fprintf(stderr, "TESTCASE PREPARE: PATHCONF FAILED!\n");
+        fprintf(stderr, "TESTCASE PREPARE: LOOKUP not ok|status:%d\n", res->status);
+        fprintf(stderr, "TESTCASE PREPARE: LOOKUP FAILED!\n");
         exit(10);
     }
+    existing_fh.data.data_len = res->LOOKUP3res_u.resok.object.data.data_len;
+    memset(fh_data,0,sizeof(fh_data));
+    existing_fh.data.data_val = fh_data;   
+    memcpy(existing_fh.data.data_val, res->LOOKUP3res_u.resok.object.data.data_val,existing_fh.data.data_len); 
 
     fprintf(stdout, "\nTESTCASE1: Send LOOKUP LONG NAME Request\n"); 
-	LOOKUP_PATHCONF = res->PATHCONF3res_u.resok;
-    fprintf(stdout, "LOOKUP PATHCONF result, name_max: %d\n", LOOKUP_PATHCONF.name_max); 
 
     struct LOOKUP3args args;
     memset((void*)&args, 0, sizeof(args));
@@ -218,8 +283,41 @@ void nfs_lookup_testcase_longname_cb(struct rpc_context *rpc, int status, void *
     }
 }
 
-void nfs_lookup_testcase_prepare_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
+void nfs_lookup_testcase_ok_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
+    struct client *client = private_data;
 
+    if (status == RPC_STATUS_ERROR) {
+        fprintf(stderr, "nfs/pathconf call failed with \"%s\"\n", (char *)data);
+        exit(10);
+    }
+    if (status != RPC_STATUS_SUCCESS) {
+        fprintf(stderr, "nfs/pathconf call to server %s failed, status:%d\n", client->server, status);
+        exit(10);
+    }
+    printf("Got reply from server for NFS/PATHCONF procedure.\n");
+
+    PATHCONF3res *res = data;
+    if (res->status != NFS3_OK) {
+        fprintf(stderr, "TESTCASE PREPARE: PATHCONF not ok|status:%d\n", res->status);
+        fprintf(stderr, "TESTCASE PREPARE: PATHCONF FAILED!\n");
+        exit(10);
+    }
+    
+	LOOKUP_PATHCONF = res->PATHCONF3res_u.resok;
+    fprintf(stdout, "LOOKUP PATHCONF result, name_max: %d\n", LOOKUP_PATHCONF.name_max); 
+
+    struct LOOKUP3args args;
+    memset(&args, 0, sizeof(args));
+    args.what.dir = client->rootfh;
+    args.what.name = "create_new.txt";
+    int ret = rpc_nfs3_lookup_async(rpc, nfs_lookup_testcase_longname_cb, &args, client);
+    if (ret) {
+        fprintf(stderr, "Failed to send lookup request|ret:%d\n", ret);
+        exit(10);
+    }
+}
+
+void nfs_lookup_testcase_prepare_cb(struct rpc_context *rpc, int status, void *data, void *private_data) {
     struct client *client = private_data;
 
     if (status != RPC_STATUS_SUCCESS) {
@@ -236,7 +334,7 @@ void nfs_lookup_testcase_prepare_cb(struct rpc_context *rpc, int status, void *d
     memset((void *)&args, 0, sizeof(args)); 
     args.object = client->rootfh; 
 
-    if (rpc_nfs3_pathconf_async(rpc, nfs_lookup_testcase_longname_cb, &args, client) != 0) {
+    if (rpc_nfs3_pathconf_async(rpc, nfs_lookup_testcase_ok_cb, &args, client) != 0) {
         fprintf(stderr, "Failed to send pathconf request\n\n");
         exit(10);
     }
@@ -255,6 +353,7 @@ int main(int argc, char *argv[]) {
     client.test_case_cb = nfs_lookup_testcase_prepare_cb; 
 
     memset(&LOOKUP_PATHCONF, 0, sizeof(PATHCONF3resok));
+    memset(&existing_fh, 0, sizeof(existing_fh));
 
     drive_frame(client);
 
